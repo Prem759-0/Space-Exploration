@@ -1,220 +1,142 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Exploration</title>
+<!-- ADD THIS BELOW YOUR EXISTING BODY CONTENT -->
 
-<!-- GSAP -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-
-<style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:sans-serif; }
-body { background:black; color:white; overflow-x:hidden; }
-
-/* STARFIELD */
-canvas {
-  position:fixed;
-  top:0; left:0;
-  z-index:-2;
-}
-
-/* WARP FLASH */
-.warp {
-  position:fixed;
-  width:100%;
-  height:100%;
-  background:white;
-  opacity:0;
-  z-index:5;
-  pointer-events:none;
-}
-
-/* SECTIONS */
-section {
-  height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:space-around;
-  padding:50px;
-}
-
-/* HERO */
-.hero {
-  flex-direction:column;
-  text-align:center;
-}
-.hero h1 { font-size:3rem; }
-.hero p { opacity:0.7; }
-
-/* PLANETS */
-.planet {
-  width:260px;
-  height:260px;
-  border-radius:50%;
-  box-shadow:0 0 60px rgba(255,255,255,0.2);
-}
-
-/* SUN */
-.sun {
-  width:350px;
-  height:350px;
-  background:radial-gradient(circle,#ffcc00,#ff3300);
-  box-shadow:0 0 120px orange;
-  animation:pulse 3s infinite alternate;
-}
-
-/* PLANET COLORS */
-.mercury { background:#aaa; }
-.venus { background:#e0a96d; }
-.earth {
-  background:url("https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg");
-  background-size:cover;
-  animation:rotate 30s linear infinite;
-}
-.mars { background:#ff3300; }
-.jupiter { background:linear-gradient(#d9a066,#a05a2c); }
-.uranus { background:#66ccff; }
-.neptune { background:#3366ff; }
-
-/* SATURN */
-.saturn {
-  background:#d9b38c;
-  position:relative;
-}
-.saturn::after {
-  content:"";
-  position:absolute;
-  width:420px;
-  height:120px;
-  border-radius:50%;
-  border:3px solid rgba(255,255,255,0.3);
-  top:70px;
-  left:-80px;
-  transform:rotate(20deg);
-}
-
-/* INFO PANEL */
-.info {
-  max-width:350px;
-  backdrop-filter:blur(12px);
-  background:rgba(255,255,255,0.05);
+<!-- MODAL -->
+<div id="modal" style="
+position:fixed;
+top:0; left:0;
+width:100%; height:100%;
+background:rgba(0,0,0,0.8);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:20;
+">
+  <div style="
+  width:80%;
+  max-width:600px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(15px);
   padding:20px;
   border-radius:15px;
-}
+  text-align:center;
+  position:relative;
+  ">
+    <button onclick="closeModal()" style="
+    position:absolute;
+    top:10px; right:10px;
+    background:none; color:white; border:none;
+    font-size:20px; cursor:pointer;">✖</button>
 
-/* ANIMATIONS */
-@keyframes rotate {
-  from { background-position:0 0; }
-  to { background-position:1000px 0; }
-}
-@keyframes pulse {
-  from { transform:scale(1); }
-  to { transform:scale(1.1); }
-}
-</style>
-</head>
+    <h2 id="modalTitle"></h2>
+    <canvas id="planet3d" width="300" height="300"></canvas>
+    <p id="modalText"></p>
 
-<body>
-
-<div class="warp"></div>
-<canvas id="stars"></canvas>
-
-<!-- HERO -->
-<section class="hero">
-  <h1>🌌 Explore the Solar System</h1>
-  <p>Scroll to begin your journey through space</p>
-</section>
-
-<!-- SUN -->
-<section>
-  <div class="planet sun"></div>
-  <div class="info">
-    <h2>☀️ Sun</h2>
-    <p>Diameter: 1.39 million km<br>Temperature: 5500°C<br>Core of our solar system.</p>
+    <!-- SIZE BAR -->
+    <div id="sizeBar" style="margin-top:15px;"></div>
   </div>
-</section>
+</div>
 
-<!-- PLANETS -->
-<section><div class="planet mercury"></div><div class="info"><h2>Mercury</h2><p>Closest planet to the Sun.</p></div></section>
-<section><div class="planet venus"></div><div class="info"><h2>Venus</h2><p>Hottest planet with thick atmosphere.</p></div></section>
-<section><div class="planet earth"></div><div class="info"><h2>Earth</h2><p>Only known planet with life.</p></div></section>
-<section><div class="planet mars"></div><div class="info"><h2>Mars</h2><p>The red planet.</p></div></section>
-<section><div class="planet jupiter"></div><div class="info"><h2>Jupiter</h2><p>Largest planet.</p></div></section>
-<section><div class="planet saturn"></div><div class="info"><h2>Saturn</h2><p>Famous for rings.</p></div></section>
-<section><div class="planet uranus"></div><div class="info"><h2>Uranus</h2><p>Rotates sideways.</p></div></section>
-<section><div class="planet neptune"></div><div class="info"><h2>Neptune</h2><p>Farthest known planet.</p></div></section>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160/build/three.min.js"></script>
 
 <script>
-// ⭐ STARFIELD
-const canvas = document.getElementById("stars");
-const ctx = canvas.getContext("2d");
+// 🌍 PLANET DATA
+const planetInfo = {
+  Earth: {text:"Our home planet with life.", size:1},
+  Jupiter: {text:"Largest planet in solar system.", size:11},
+  Mars: {text:"Red planet, future missions.", size:0.5},
+  Saturn: {text:"Ringed giant.", size:9}
+};
 
-canvas.width = innerWidth;
-canvas.height = innerHeight;
+// CLICK EVENT
+document.querySelectorAll(".planet").forEach(p=>{
+  p.addEventListener("click", ()=>{
+    let name = p.classList[1]?.charAt(0).toUpperCase()+p.classList[1]?.slice(1);
 
-let stars = [];
-for(let i=0;i<800;i++){
-  stars.push({
-    x:Math.random()*canvas.width,
-    y:Math.random()*canvas.height,
-    z:Math.random()*2
-  });
-}
+    if(!planetInfo[name]) return;
 
-function animateStars(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  stars.forEach(s=>{
-    ctx.fillStyle="white";
-    ctx.fillRect(s.x,s.y,s.z,s.z);
-    s.y+=s.z;
-    if(s.y>canvas.height) s.y=0;
-  });
-  requestAnimationFrame(animateStars);
-}
-animateStars();
-
-// 🖱️ PARALLAX
-document.addEventListener("mousemove", e=>{
-  let x=(e.clientX/innerWidth-0.5)*20;
-  let y=(e.clientY/innerHeight-0.5)*20;
-
-  document.querySelectorAll(".planet").forEach(p=>{
-    p.style.transform=`translate(${x}px,${y}px)`;
+    openModal(name);
   });
 });
 
-// 🚀 WARP EFFECT
-let warp = document.querySelector(".warp");
+function openModal(name){
+  document.getElementById("modal").style.display="flex";
+  document.getElementById("modalTitle").innerText=name;
+  document.getElementById("modalText").innerText=planetInfo[name].text;
 
-ScrollTrigger.create({
-  start:0,
-  end:"max",
-  onUpdate:self=>{
-    if(self.direction===1 && self.progress%0.2<0.01){
-      gsap.fromTo(warp,{opacity:0},{opacity:1,duration:0.2,yoyo:true,repeat:1});
-    }
+  // SIZE BAR
+  let size = planetInfo[name].size * 20;
+  document.getElementById("sizeBar").innerHTML =
+    `<div style="background:white;height:10px;width:${size}%"></div>`;
+
+  init3D();
+}
+
+function closeModal(){
+  document.getElementById("modal").style.display="none";
+}
+
+// 🌌 3D PLANET
+function init3D(){
+  const canvas = document.getElementById("planet3d");
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75,1,0.1,1000);
+  camera.position.z=3;
+
+  const renderer = new THREE.WebGLRenderer({canvas,alpha:true});
+  renderer.setSize(300,300);
+
+  const light = new THREE.PointLight(0xffffff,1.5);
+  light.position.set(5,5,5);
+  scene.add(light);
+
+  const geo = new THREE.SphereGeometry(1,32,32);
+  const mat = new THREE.MeshStandardMaterial({color:0x3399ff});
+  const mesh = new THREE.Mesh(geo,mat);
+  scene.add(mesh);
+
+  function animate(){
+    requestAnimationFrame(animate);
+    mesh.rotation.y += 0.01;
+    renderer.render(scene,camera);
   }
-});
+  animate();
+}
 
-// 🔍 SCROLL ANIMATION
-gsap.utils.toArray("section").forEach(sec=>{
-  gsap.from(sec.querySelector(".planet"),{
-    scrollTrigger:{trigger:sec,start:"top 80%"},
-    scale:0.5,
-    opacity:0,
-    duration:1.5
-  });
+// 🌙 MOON + SATELLITE (EARTH)
+const earth = document.querySelector(".earth");
 
-  gsap.from(sec.querySelector(".info"),{
-    scrollTrigger:{trigger:sec,start:"top 80%"},
-    x:100,
-    opacity:0,
-    duration:1.5
-  });
-});
+if(earth){
+  let moon = document.createElement("div");
+  moon.style = `
+    position:absolute;
+    width:40px;height:40px;
+    background:white;
+    border-radius:50%;
+    top:110px; left:110px;
+    animation:moonOrbit 6s linear infinite;
+  `;
+  earth.appendChild(moon);
+
+  let sat = document.createElement("div");
+  sat.style = `
+    position:absolute;
+    width:10px;height:10px;
+    background:cyan;
+    border-radius:50%;
+    top:120px; left:120px;
+    animation:moonOrbit 3s linear infinite;
+  `;
+  earth.appendChild(sat);
+}
+
+// ORBIT KEYFRAMES
+const style = document.createElement("style");
+style.innerHTML = `
+@keyframes moonOrbit {
+  from { transform: rotate(0deg) translateX(80px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(80px) rotate(-360deg); }
+}`;
+document.head.appendChild(style);
+
 </script>
-
-</body>
-</html>
