@@ -3,200 +3,217 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space SaaS Pro</title>
+<title>Space Exploration</title>
+
+<!-- GSAP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
 <style>
-body { margin:0; font-family:sans-serif; background:black; color:white; overflow:hidden; }
+* { margin:0; padding:0; box-sizing:border-box; font-family:sans-serif; }
+body { background:black; color:white; overflow-x:hidden; }
 
-/* LANDING */
-.landing {
+/* STARFIELD */
+canvas {
+  position:fixed;
+  top:0; left:0;
+  z-index:-2;
+}
+
+/* WARP FLASH */
+.warp {
+  position:fixed;
+  width:100%;
+  height:100%;
+  background:white;
+  opacity:0;
+  z-index:5;
+  pointer-events:none;
+}
+
+/* SECTIONS */
+section {
   height:100vh;
   display:flex;
-  flex-direction:column;
-  justify-content:center;
   align-items:center;
-  text-align:center;
-}
-.btn {
-  padding:12px 20px;
-  background:white;
-  color:black;
-  border-radius:10px;
-  cursor:pointer;
+  justify-content:space-around;
+  padding:50px;
 }
 
-/* UI */
-#ui {
-  position:fixed;
-  top:20px;
-  left:20px;
-  z-index:10;
+/* HERO */
+.hero {
+  flex-direction:column;
+  text-align:center;
 }
-.card {
-  background:rgba(255,255,255,0.08);
-  padding:15px;
-  border-radius:10px;
-  backdrop-filter:blur(10px);
+.hero h1 { font-size:3rem; }
+.hero p { opacity:0.7; }
+
+/* PLANETS */
+.planet {
+  width:260px;
+  height:260px;
+  border-radius:50%;
+  box-shadow:0 0 60px rgba(255,255,255,0.2);
+}
+
+/* SUN */
+.sun {
+  width:350px;
+  height:350px;
+  background:radial-gradient(circle,#ffcc00,#ff3300);
+  box-shadow:0 0 120px orange;
+  animation:pulse 3s infinite alternate;
+}
+
+/* PLANET COLORS */
+.mercury { background:#aaa; }
+.venus { background:#e0a96d; }
+.earth {
+  background:url("https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg");
+  background-size:cover;
+  animation:rotate 30s linear infinite;
+}
+.mars { background:#ff3300; }
+.jupiter { background:linear-gradient(#d9a066,#a05a2c); }
+.uranus { background:#66ccff; }
+.neptune { background:#3366ff; }
+
+/* SATURN */
+.saturn {
+  background:#d9b38c;
+  position:relative;
+}
+.saturn::after {
+  content:"";
+  position:absolute;
+  width:420px;
+  height:120px;
+  border-radius:50%;
+  border:3px solid rgba(255,255,255,0.3);
+  top:70px;
+  left:-80px;
+  transform:rotate(20deg);
+}
+
+/* INFO PANEL */
+.info {
+  max-width:350px;
+  backdrop-filter:blur(12px);
+  background:rgba(255,255,255,0.05);
+  padding:20px;
+  border-radius:15px;
+}
+
+/* ANIMATIONS */
+@keyframes rotate {
+  from { background-position:0 0; }
+  to { background-position:1000px 0; }
+}
+@keyframes pulse {
+  from { transform:scale(1); }
+  to { transform:scale(1.1); }
 }
 </style>
 </head>
 
 <body>
 
-<section class="landing">
-  <h1>🚀 Space SaaS</h1>
-  <p>Launch immersive 3D exploration</p>
-  <div class="btn" onclick="start()">Enter Experience</div>
+<div class="warp"></div>
+<canvas id="stars"></canvas>
+
+<!-- HERO -->
+<section class="hero">
+  <h1>🌌 Explore the Solar System</h1>
+  <p>Scroll to begin your journey through space</p>
 </section>
 
-<div id="ui">
-  <div class="card">
-    <h2 id="name">Planet</h2>
-    <p id="desc">Description</p>
+<!-- SUN -->
+<section>
+  <div class="planet sun"></div>
+  <div class="info">
+    <h2>☀️ Sun</h2>
+    <p>Diameter: 1.39 million km<br>Temperature: 5500°C<br>Core of our solar system.</p>
   </div>
-</div>
+</section>
 
-<script type="module">
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js";
+<!-- PLANETS -->
+<section><div class="planet mercury"></div><div class="info"><h2>Mercury</h2><p>Closest planet to the Sun.</p></div></section>
+<section><div class="planet venus"></div><div class="info"><h2>Venus</h2><p>Hottest planet with thick atmosphere.</p></div></section>
+<section><div class="planet earth"></div><div class="info"><h2>Earth</h2><p>Only known planet with life.</p></div></section>
+<section><div class="planet mars"></div><div class="info"><h2>Mars</h2><p>The red planet.</p></div></section>
+<section><div class="planet jupiter"></div><div class="info"><h2>Jupiter</h2><p>Largest planet.</p></div></section>
+<section><div class="planet saturn"></div><div class="info"><h2>Saturn</h2><p>Famous for rings.</p></div></section>
+<section><div class="planet uranus"></div><div class="info"><h2>Uranus</h2><p>Rotates sideways.</p></div></section>
+<section><div class="planet neptune"></div><div class="info"><h2>Neptune</h2><p>Farthest known planet.</p></div></section>
 
-let started=false;
-
-window.start = ()=>{
-  document.querySelector(".landing").style.display="none";
-  if(!started){ init(); started=true; }
-};
-
-function init(){
-
-const scene = new THREE.Scene();
-
-// CAMERA
-const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 2000);
-camera.position.z=5;
-
-// RENDERER
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth,innerHeight);
-document.body.appendChild(renderer.domElement);
-
-// 🔥 LIGHT FIX (IMPORTANT)
-const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-scene.add(ambient);
-
-const point = new THREE.PointLight(0xffffff, 1.5);
-point.position.set(20,20,20);
-scene.add(point);
-
+<script>
 // ⭐ STARFIELD
-const starGeo = new THREE.BufferGeometry();
-let pos=[];
-for(let i=0;i<4000;i++){
-  pos.push((Math.random()-0.5)*2000);
-  pos.push((Math.random()-0.5)*2000);
-  pos.push((Math.random()-0.5)*2000);
-}
-starGeo.setAttribute("position", new THREE.Float32BufferAttribute(pos,3));
-const stars = new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xffffff}));
-scene.add(stars);
+const canvas = document.getElementById("stars");
+const ctx = canvas.getContext("2d");
 
-// 🌍 TEXTURES (MORE RELIABLE)
-const loader = new THREE.TextureLoader();
+canvas.width = innerWidth;
+canvas.height = innerHeight;
 
-function createPlanet(url, x, fallbackColor){
-  const geo = new THREE.SphereGeometry(2,64,64);
-
-  const texture = loader.load(
-    url,
-    ()=>{}, 
-    undefined,
-    ()=>{ console.log("Texture failed, using color"); }
-  );
-
-  const mat = new THREE.MeshStandardMaterial({
-    map: texture,
-    color: fallbackColor
+let stars = [];
+for(let i=0;i<800;i++){
+  stars.push({
+    x:Math.random()*canvas.width,
+    y:Math.random()*canvas.height,
+    z:Math.random()*2
   });
-
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.x = x;
-  scene.add(mesh);
-
-  // 🌟 ATMOSPHERE GLOW
-  const glow = new THREE.Mesh(
-    new THREE.SphereGeometry(2.2,64,64),
-    new THREE.MeshBasicMaterial({
-      color:0x00aaff,
-      transparent:true,
-      opacity:0.15
-    })
-  );
-  glow.position.x = x;
-  scene.add(glow);
-
-  return mesh;
 }
 
-// 🌍 PLANETS (FIXED)
-const earth = createPlanet(
-  "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg",
-  0,
-  0x2266ff
-);
+function animateStars(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  stars.forEach(s=>{
+    ctx.fillStyle="white";
+    ctx.fillRect(s.x,s.y,s.z,s.z);
+    s.y+=s.z;
+    if(s.y>canvas.height) s.y=0;
+  });
+  requestAnimationFrame(animateStars);
+}
+animateStars();
 
-const mars = createPlanet(
-  "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mars_1k_color.jpg",
-  30,
-  0xff3300
-);
+// 🖱️ PARALLAX
+document.addEventListener("mousemove", e=>{
+  let x=(e.clientX/innerWidth-0.5)*20;
+  let y=(e.clientY/innerHeight-0.5)*20;
 
-const jupiter = createPlanet(
-  "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/jupiter.jpg",
-  60,
-  0xffaa66
-);
-
-// DATA
-const planets = [
-  {mesh:earth,name:"🌍 Earth",desc:"Life planet"},
-  {mesh:mars,name:"🔴 Mars",desc:"Future colony"},
-  {mesh:jupiter,name:"🪐 Jupiter",desc:"Gas giant"}
-];
-
-// SCROLL SMOOTH
-let target=0,current=0;
-window.addEventListener("wheel", e=>{
-  target += e.deltaY * 0.05;
+  document.querySelectorAll(".planet").forEach(p=>{
+    p.style.transform=`translate(${x}px,${y}px)`;
+  });
 });
 
-// ANIMATE
-function animate(){
-  requestAnimationFrame(animate);
+// 🚀 WARP EFFECT
+let warp = document.querySelector(".warp");
 
-  current += (target-current)*0.05;
-  camera.position.x = current;
-
-  planets.forEach(p=> p.mesh.rotation.y += 0.003);
-
-  let closest = planets.reduce((a,b)=>{
-    return Math.abs(b.mesh.position.x-camera.position.x) <
-           Math.abs(a.mesh.position.x-camera.position.x)?b:a;
-  });
-
-  document.getElementById("name").innerText=closest.name;
-  document.getElementById("desc").innerText=closest.desc;
-
-  renderer.render(scene,camera);
-}
-animate();
-
-// RESIZE
-window.addEventListener("resize", ()=>{
-  camera.aspect=innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth,innerHeight);
+ScrollTrigger.create({
+  start:0,
+  end:"max",
+  onUpdate:self=>{
+    if(self.direction===1 && self.progress%0.2<0.01){
+      gsap.fromTo(warp,{opacity:0},{opacity:1,duration:0.2,yoyo:true,repeat:1});
+    }
+  }
 });
 
-}
+// 🔍 SCROLL ANIMATION
+gsap.utils.toArray("section").forEach(sec=>{
+  gsap.from(sec.querySelector(".planet"),{
+    scrollTrigger:{trigger:sec,start:"top 80%"},
+    scale:0.5,
+    opacity:0,
+    duration:1.5
+  });
+
+  gsap.from(sec.querySelector(".info"),{
+    scrollTrigger:{trigger:sec,start:"top 80%"},
+    x:100,
+    opacity:0,
+    duration:1.5
+  });
+});
 </script>
 
 </body>
