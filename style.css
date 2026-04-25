@@ -93,3 +93,9 @@ body {
   font-size: 3rem;
   letter-spacing: 5px;
 }
+
+#planetCanvas {
+  width: 100%;
+  height: 100vh;
+  display: block;
+}
