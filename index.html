@@ -3,10 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Experience</title>
+<title>Space Experience Pro</title>
 
 <style>
-body { margin:0; font-family:sans-serif; background:black; color:white; overflow:hidden; }
+body { margin:0; overflow:hidden; background:black; font-family:sans-serif; }
+
+/* UI */
+#ui {
+  position:fixed;
+  top:20px;
+  left:20px;
+  z-index:10;
+  transition:opacity 0.4s ease;
+}
+.card {
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(15px);
+  padding:18px;
+  border-radius:14px;
+  width:260px;
+  color:white;
+  box-shadow:0 0 25px rgba(255,255,255,0.1);
+}
 
 /* LOADER */
 #loader {
@@ -15,62 +33,39 @@ body { margin:0; font-family:sans-serif; background:black; color:white; overflow
   height:100%;
   background:black;
   display:flex;
-  justify-content:center;
   align-items:center;
+  justify-content:center;
   z-index:100;
-  font-size:2rem;
-  letter-spacing:3px;
+  font-size:1.5rem;
+  letter-spacing:2px;
 }
 
-/* NAV DOTS */
-#nav {
+/* PROGRESS BAR */
+#progress {
   position:fixed;
-  right:20px;
-  top:50%;
-  transform:translateY(-50%);
+  bottom:0;
+  left:0;
+  height:3px;
+  background:white;
+  width:0%;
   z-index:20;
+  transition:width 0.2s;
 }
-.dot {
-  width:10px; height:10px;
-  border-radius:50%;
-  background:gray;
-  margin:10px 0;
-  transition:0.3s;
-}
-.dot.active { background:white; }
-
-/* UI CARD */
-#ui {
-  position:fixed;
-  top:20px;
-  left:20px;
-  z-index:10;
-}
-.card {
-  background:rgba(255,255,255,0.06);
-  backdrop-filter:blur(12px);
-  padding:15px;
-  border-radius:12px;
-  width:260px;
-}
-
-/* CANVAS */
-canvas { display:block; }
 </style>
 </head>
 
 <body>
 
-<div id="loader">🚀 Loading Universe...</div>
-
-<div id="nav"></div>
+<div id="loader">🌌 Loading Experience...</div>
 
 <div id="ui">
   <div class="card">
-    <h2 id="name">🌌 Space</h2>
-    <p id="desc">Scroll to explore</p>
+    <h2 id="name">Space</h2>
+    <p id="desc">Scroll to begin</p>
   </div>
 </div>
+
+<div id="progress"></div>
 
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js";
@@ -85,25 +80,25 @@ camera.position.z = 10;
 // RENDERER
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 document.body.appendChild(renderer.domElement);
 
 // LIGHT
-scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-const light = new THREE.PointLight(0xffffff, 1.5);
+scene.add(new THREE.AmbientLight(0xffffff,0.6));
+const light = new THREE.PointLight(0xffffff,1.5);
 light.position.set(50,50,50);
 scene.add(light);
 
 // STARFIELD
-const starGeo = new THREE.BufferGeometry();
+const geo = new THREE.BufferGeometry();
 let pos=[];
-for(let i=0;i<3000;i++){
+for(let i=0;i<2500;i++){
   pos.push((Math.random()-0.5)*3000);
   pos.push((Math.random()-0.5)*3000);
   pos.push((Math.random()-0.5)*3000);
 }
-starGeo.setAttribute("position", new THREE.Float32BufferAttribute(pos,3));
-scene.add(new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xffffff})));
+geo.setAttribute("position", new THREE.Float32BufferAttribute(pos,3));
+scene.add(new THREE.Points(geo,new THREE.PointsMaterial({color:0xffffff})));
 
 // PLANETS
 const loader = new THREE.TextureLoader();
@@ -119,18 +114,10 @@ function createPlanet(data){
 }
 
 const planets = [
-  createPlanet({x:0,name:"🌍 Earth",desc:"Our home",tex:"https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg",color:0x2266ff}),
+  createPlanet({x:0,name:"🌍 Earth",desc:"Our home planet",tex:"https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg",color:0x2266ff}),
   createPlanet({x:80,name:"🔴 Mars",desc:"The red planet",tex:"https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mars_1k_color.jpg",color:0xff3300}),
   createPlanet({x:160,name:"🪐 Jupiter",desc:"Gas giant",tex:"https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/jupiter.jpg",color:0xffaa66})
 ];
-
-// NAV DOTS
-const nav = document.getElementById("nav");
-planets.forEach(()=> {
-  const d=document.createElement("div");
-  d.className="dot";
-  nav.appendChild(d);
-});
 
 // SCROLL
 let target=0,current=0;
@@ -150,18 +137,25 @@ window.addEventListener("touchmove", e=>{
   lastY = e.touches[0].clientY;
 });
 
-// ANIMATE
+// UI
+const ui = document.getElementById("ui");
+const progress = document.getElementById("progress");
+
+// ANIMATION
 function animate(){
   requestAnimationFrame(animate);
 
   current += (target-current)*0.05;
   camera.position.x = current;
 
-  planets.forEach((p,i)=>{
+  // PROGRESS BAR
+  progress.style.width = Math.min(Math.max(current/200*100,0),100)+"%";
+
+  planets.forEach(p=>{
     p.mesh.rotation.y += 0.002;
 
     // LAZY LOAD
-    if(!p.loaded && Math.abs(camera.position.x - p.x) < 50){
+    if(!p.loaded && Math.abs(camera.position.x - p.x) < 40){
       loader.load(p.tex, tex=>{
         p.mesh.material.map = tex;
         p.mesh.material.needsUpdate = true;
@@ -170,19 +164,24 @@ function animate(){
     }
   });
 
-  // UI UPDATE
+  // FOCUS EFFECT
   let closest = planets.reduce((a,b)=>{
     return Math.abs(b.x-camera.position.x) <
            Math.abs(a.x-camera.position.x)?b:a;
   });
 
+  let dist = Math.abs(closest.x - camera.position.x);
+
+  // SLOW DOWN NEAR PLANET (cinematic feel)
+  if(dist < 10){
+    target += (closest.x - target) * 0.02;
+  }
+
+  // UI FADE
+  ui.style.opacity = 0.2 + (1 - Math.min(dist/50,1));
+
   document.getElementById("name").innerText = closest.name;
   document.getElementById("desc").innerText = closest.desc;
-
-  // NAV UPDATE
-  document.querySelectorAll(".dot").forEach((d,i)=>{
-    d.classList.toggle("active", planets[i]===closest);
-  });
 
   renderer.render(scene,camera);
 }
@@ -191,7 +190,7 @@ animate();
 // LOADER
 setTimeout(()=>{
   document.getElementById("loader").style.display="none";
-},1500);
+},1200);
 
 // RESIZE
 window.addEventListener("resize", ()=>{
