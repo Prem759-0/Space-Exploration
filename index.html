@@ -3,33 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Experience</title>
+<title>Space SaaS Pro</title>
 
 <style>
-body { margin:0; overflow:hidden; background:black; font-family:sans-serif; color:white; }
+body { margin:0; font-family:sans-serif; background:black; color:white; overflow:hidden; }
 
-/* LOADER */
-#loader {
-  position:fixed;
-  width:100%;
-  height:100%;
-  background:black;
+/* LANDING */
+.landing {
+  height:100vh;
   display:flex;
+  flex-direction:column;
   justify-content:center;
   align-items:center;
-  z-index:100;
-  flex-direction:column;
+  text-align:center;
 }
-
-#loader h1 {
-  font-size:2rem;
-  letter-spacing:3px;
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0%{opacity:0.3;}
-  100%{opacity:1;}
+.btn {
+  padding:12px 20px;
+  background:white;
+  color:black;
+  border-radius:10px;
+  cursor:pointer;
 }
 
 /* UI */
@@ -39,133 +32,141 @@ body { margin:0; overflow:hidden; background:black; font-family:sans-serif; colo
   left:20px;
   z-index:10;
 }
-
 .card {
-  backdrop-filter: blur(15px);
-  background: rgba(255,255,255,0.07);
-  padding:20px;
-  border-radius:15px;
-  width:280px;
-  box-shadow:0 0 30px rgba(255,255,255,0.1);
-  transition:0.3s;
-}
-
-.card:hover {
-  transform: scale(1.03);
-}
-
-/* CONTROLS */
-.controls {
-  margin-top:15px;
-}
-
-button {
-  background:rgba(255,255,255,0.1);
-  border:none;
-  padding:8px 12px;
-  margin:5px;
-  border-radius:8px;
-  color:white;
-  cursor:pointer;
-}
-button:hover {
-  background:rgba(255,255,255,0.3);
+  background:rgba(255,255,255,0.08);
+  padding:15px;
+  border-radius:10px;
+  backdrop-filter:blur(10px);
 }
 </style>
 </head>
 
 <body>
 
-<div id="loader">
-  <h1>🚀 Initializing Space...</h1>
-</div>
+<section class="landing">
+  <h1>🚀 Space SaaS</h1>
+  <p>Launch immersive 3D exploration</p>
+  <div class="btn" onclick="start()">Enter Experience</div>
+</section>
 
 <div id="ui">
   <div class="card">
-    <h2 id="name">Loading...</h2>
-    <p id="desc">Preparing journey...</p>
-
-    <div class="controls">
-      <button onclick="toggleSound()">🔊 Sound</button>
-      <button onclick="toggleWarp()">⚡ Warp</button>
-    </div>
+    <h2 id="name">Planet</h2>
+    <p id="desc">Description</p>
   </div>
 </div>
-
-<audio id="bgSound" loop>
-  <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_c8c8a73467.mp3" type="audio/mp3">
-</audio>
 
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js";
 
+let started=false;
+
+window.start = ()=>{
+  document.querySelector(".landing").style.display="none";
+  if(!started){ init(); started=true; }
+};
+
+function init(){
+
 const scene = new THREE.Scene();
 
+// CAMERA
 const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 2000);
-camera.position.z = 5;
+camera.position.z=5;
 
+// RENDERER
 const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth, innerHeight);
+renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// LIGHTING
-const light = new THREE.PointLight(0xffffff, 2);
-light.position.set(50,50,50);
-scene.add(light);
+// 🔥 LIGHT FIX (IMPORTANT)
+const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambient);
 
-// STARFIELD
+const point = new THREE.PointLight(0xffffff, 1.5);
+point.position.set(20,20,20);
+scene.add(point);
+
+// ⭐ STARFIELD
 const starGeo = new THREE.BufferGeometry();
-let starPos = [];
-for(let i=0;i<6000;i++){
-  starPos.push((Math.random()-0.5)*2000);
-  starPos.push((Math.random()-0.5)*2000);
-  starPos.push((Math.random()-0.5)*2000);
+let pos=[];
+for(let i=0;i<4000;i++){
+  pos.push((Math.random()-0.5)*2000);
+  pos.push((Math.random()-0.5)*2000);
+  pos.push((Math.random()-0.5)*2000);
 }
-starGeo.setAttribute("position", new THREE.Float32BufferAttribute(starPos,3));
+starGeo.setAttribute("position", new THREE.Float32BufferAttribute(pos,3));
 const stars = new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xffffff}));
 scene.add(stars);
 
-// TEXTURES
+// 🌍 TEXTURES (MORE RELIABLE)
 const loader = new THREE.TextureLoader();
 
-function planet(tex,x){
+function createPlanet(url, x, fallbackColor){
   const geo = new THREE.SphereGeometry(2,64,64);
-  const mat = new THREE.MeshStandardMaterial({map:tex});
-  const mesh = new THREE.Mesh(geo,mat);
-  mesh.position.x=x;
+
+  const texture = loader.load(
+    url,
+    ()=>{}, 
+    undefined,
+    ()=>{ console.log("Texture failed, using color"); }
+  );
+
+  const mat = new THREE.MeshStandardMaterial({
+    map: texture,
+    color: fallbackColor
+  });
+
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.x = x;
   scene.add(mesh);
+
+  // 🌟 ATMOSPHERE GLOW
+  const glow = new THREE.Mesh(
+    new THREE.SphereGeometry(2.2,64,64),
+    new THREE.MeshBasicMaterial({
+      color:0x00aaff,
+      transparent:true,
+      opacity:0.15
+    })
+  );
+  glow.position.x = x;
+  scene.add(glow);
+
   return mesh;
 }
 
-const earth = planet(loader.load("https://threejs.org/examples/textures/earth_atmos_2048.jpg"),0);
-const mars = planet(loader.load("https://threejs.org/examples/textures/mars_1k_color.jpg"),30);
-const jupiter = planet(loader.load("https://threejs.org/examples/textures/jupiter.jpg"),60);
+// 🌍 PLANETS (FIXED)
+const earth = createPlanet(
+  "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg",
+  0,
+  0x2266ff
+);
 
+const mars = createPlanet(
+  "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mars_1k_color.jpg",
+  30,
+  0xff3300
+);
+
+const jupiter = createPlanet(
+  "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/jupiter.jpg",
+  60,
+  0xffaa66
+);
+
+// DATA
 const planets = [
-  {mesh:earth,name:"🌍 Earth",desc:"Our home"},
+  {mesh:earth,name:"🌍 Earth",desc:"Life planet"},
   {mesh:mars,name:"🔴 Mars",desc:"Future colony"},
   {mesh:jupiter,name:"🪐 Jupiter",desc:"Gas giant"}
 ];
 
 // SCROLL SMOOTH
-let target = 0;
-let current = 0;
-
+let target=0,current=0;
 window.addEventListener("wheel", e=>{
   target += e.deltaY * 0.05;
 });
-
-// SOUND
-let soundOn=false;
-window.toggleSound = ()=>{
-  const audio=document.getElementById("bgSound");
-  soundOn=!soundOn;
-  soundOn ? audio.play() : audio.pause();
-};
-
-// WARP MODE
-let warp=false;
-window.toggleWarp = ()=> warp=!warp;
 
 // ANIMATE
 function animate(){
@@ -174,9 +175,7 @@ function animate(){
   current += (target-current)*0.05;
   camera.position.x = current;
 
-  planets.forEach(p=> p.mesh.rotation.y+=0.002);
-
-  stars.rotation.y += warp ? 0.01 : 0.001;
+  planets.forEach(p=> p.mesh.rotation.y += 0.003);
 
   let closest = planets.reduce((a,b)=>{
     return Math.abs(b.mesh.position.x-camera.position.x) <
@@ -190,17 +189,14 @@ function animate(){
 }
 animate();
 
-// LOADER
-setTimeout(()=>{
-  document.getElementById("loader").style.display="none";
-},2000);
-
 // RESIZE
 window.addEventListener("resize", ()=>{
   camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
 });
+
+}
 </script>
 
 </body>
