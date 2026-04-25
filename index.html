@@ -3,36 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ultra Space</title>
+  <title>Galaxy Mode</title>
 
   <link rel="stylesheet" href="style.css">
 
   <!-- GSAP -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 </head>
 
 <body>
 
 <canvas id="bg"></canvas>
 
-<section class="hero">
-  <h1>Enter The Cosmos</h1>
-  <p>Scroll to travel</p>
-</section>
-
-<section class="planet-section">
-  <div id="planet-container"></div>
-
-  <div class="info glass">
-    <h2>Earth</h2>
-    <p id="planet-info">Loading data...</p>
-  </div>
-</section>
-
-<section class="warp-section">
-  <h2>Warp Speed</h2>
-</section>
+<div class="overlay">
+  <h1>Galaxy Mode</h1>
+  <p>WASD / Arrow Keys to Fly 🚀</p>
+</div>
 
 <script type="module" src="main.js"></script>
 </body>
