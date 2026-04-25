@@ -3,18 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Production</title>
+<title>Space Experience</title>
 
 <style>
-body { margin:0; overflow:hidden; background:black; font-family:sans-serif; }
+body { margin:0; font-family:sans-serif; background:black; color:white; overflow:hidden; }
 
-/* UI */
+/* LOADER */
+#loader {
+  position:fixed;
+  width:100%;
+  height:100%;
+  background:black;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:100;
+  font-size:2rem;
+  letter-spacing:3px;
+}
+
+/* NAV DOTS */
+#nav {
+  position:fixed;
+  right:20px;
+  top:50%;
+  transform:translateY(-50%);
+  z-index:20;
+}
+.dot {
+  width:10px; height:10px;
+  border-radius:50%;
+  background:gray;
+  margin:10px 0;
+  transition:0.3s;
+}
+.dot.active { background:white; }
+
+/* UI CARD */
 #ui {
   position:fixed;
   top:20px;
   left:20px;
   z-index:10;
-  transition:opacity 0.5s;
 }
 .card {
   background:rgba(255,255,255,0.06);
@@ -22,13 +52,18 @@ body { margin:0; overflow:hidden; background:black; font-family:sans-serif; }
   padding:15px;
   border-radius:12px;
   width:260px;
-  color:white;
-  box-shadow:0 0 20px rgba(255,255,255,0.1);
 }
+
+/* CANVAS */
+canvas { display:block; }
 </style>
 </head>
 
 <body>
+
+<div id="loader">🚀 Loading Universe...</div>
+
+<div id="nav"></div>
 
 <div id="ui">
   <div class="card">
@@ -40,11 +75,14 @@ body { margin:0; overflow:hidden; background:black; font-family:sans-serif; }
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js";
 
-// BASIC SETUP
+// SCENE
 const scene = new THREE.Scene();
+
+// CAMERA
 const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 3000);
 camera.position.z = 10;
 
+// RENDERER
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -56,7 +94,7 @@ const light = new THREE.PointLight(0xffffff, 1.5);
 light.position.set(50,50,50);
 scene.add(light);
 
-// STARFIELD (OPTIMIZED)
+// STARFIELD
 const starGeo = new THREE.BufferGeometry();
 let pos=[];
 for(let i=0;i<3000;i++){
@@ -67,7 +105,7 @@ for(let i=0;i<3000;i++){
 starGeo.setAttribute("position", new THREE.Float32BufferAttribute(pos,3));
 scene.add(new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xffffff})));
 
-// LAZY TEXTURE LOADER
+// PLANETS
 const loader = new THREE.TextureLoader();
 
 function createPlanet(data){
@@ -77,25 +115,31 @@ function createPlanet(data){
   );
   mesh.position.x = data.x;
   scene.add(mesh);
-
   return {...data, mesh, loaded:false};
 }
 
-// PLANETS
 const planets = [
-  createPlanet({x:0,name:"🌍 Earth",desc:"Home",tex:"https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg",color:0x2266ff}),
-  createPlanet({x:80,name:"🔴 Mars",desc:"Red planet",tex:"https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mars_1k_color.jpg",color:0xff3300}),
+  createPlanet({x:0,name:"🌍 Earth",desc:"Our home",tex:"https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg",color:0x2266ff}),
+  createPlanet({x:80,name:"🔴 Mars",desc:"The red planet",tex:"https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mars_1k_color.jpg",color:0xff3300}),
   createPlanet({x:160,name:"🪐 Jupiter",desc:"Gas giant",tex:"https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/jupiter.jpg",color:0xffaa66})
 ];
 
-// SCROLL SYSTEM
+// NAV DOTS
+const nav = document.getElementById("nav");
+planets.forEach(()=> {
+  const d=document.createElement("div");
+  d.className="dot";
+  nav.appendChild(d);
+});
+
+// SCROLL
 let target=0,current=0;
 
 window.addEventListener("wheel", e=>{
   target += e.deltaY * 0.15;
 });
 
-// MOBILE TOUCH FIX
+// TOUCH
 let lastY=0;
 window.addEventListener("touchstart", e=>{
   lastY = e.touches[0].clientY;
@@ -106,22 +150,17 @@ window.addEventListener("touchmove", e=>{
   lastY = e.touches[0].clientY;
 });
 
-// UI FADE
-const ui = document.getElementById("ui");
-
-// ANIMATION
+// ANIMATE
 function animate(){
   requestAnimationFrame(animate);
 
-  // SMOOTH CAMERA
   current += (target-current)*0.05;
   camera.position.x = current;
 
-  // ROTATE
-  planets.forEach(p=>{
+  planets.forEach((p,i)=>{
     p.mesh.rotation.y += 0.002;
 
-    // LAZY LOAD TEXTURE
+    // LAZY LOAD
     if(!p.loaded && Math.abs(camera.position.x - p.x) < 50){
       loader.load(p.tex, tex=>{
         p.mesh.material.map = tex;
@@ -131,23 +170,28 @@ function animate(){
     }
   });
 
-  // FIND CLOSEST
+  // UI UPDATE
   let closest = planets.reduce((a,b)=>{
     return Math.abs(b.x-camera.position.x) <
            Math.abs(a.x-camera.position.x)?b:a;
   });
 
-  // UI TRANSITION
-  ui.style.opacity = 0;
-  setTimeout(()=>{
-    document.getElementById("name").innerText = closest.name;
-    document.getElementById("desc").innerText = closest.desc;
-    ui.style.opacity = 1;
-  },200);
+  document.getElementById("name").innerText = closest.name;
+  document.getElementById("desc").innerText = closest.desc;
+
+  // NAV UPDATE
+  document.querySelectorAll(".dot").forEach((d,i)=>{
+    d.classList.toggle("active", planets[i]===closest);
+  });
 
   renderer.render(scene,camera);
 }
 animate();
+
+// LOADER
+setTimeout(()=>{
+  document.getElementById("loader").style.display="none";
+},1500);
 
 // RESIZE
 window.addEventListener("resize", ()=>{
