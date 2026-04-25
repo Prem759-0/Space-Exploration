@@ -3,53 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Space Journey</title>
+  <title>Ultra Space</title>
 
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 
   <!-- GSAP -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 </head>
 
 <body>
 
-  <!-- 🌌 STARFIELD -->
-  <canvas id="stars"></canvas>
+<canvas id="bg"></canvas>
 
-  <!-- 🌠 HERO -->
-  <section class="section hero">
-    <h1>Explore The Universe</h1>
-    <p>Scroll to Begin Your Journey</p>
-  </section>
+<section class="hero">
+  <h1>Enter The Cosmos</h1>
+  <p>Scroll to travel</p>
+</section>
 
-  <!-- ☀️ SUN -->
-  <section class="section sun-section">
-    <div class="sun"></div>
-
-    <div class="info">
-      <h2>Sun</h2>
-      <p>Diameter: 1.39 million km</p>
-      <p>Temperature: 5,500°C</p>
-    </div>
-  </section>
-
-  <!-- 🌍 EARTH -->
- <section class="section planet-section">
-  <canvas id="planetCanvas"></canvas>
+<section class="planet-section">
+  <div id="planet-container"></div>
 
   <div class="info glass">
     <h2>Earth</h2>
-    <p>The only known planet with life.</p>
+    <p id="planet-info">Loading data...</p>
   </div>
 </section>
 
-  <!-- 🌠 WARP -->
-  <section class="section warp">
-    <h2>Warp Speed</h2>
-  </section>
+<section class="warp-section">
+  <h2>Warp Speed</h2>
+</section>
 
-  <script src="main.js"></script>
+<script type="module" src="main.js"></script>
 </body>
 </html>
