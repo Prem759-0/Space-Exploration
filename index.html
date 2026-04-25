@@ -3,30 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space App</title>
+<title>Cinematic Space</title>
 
 <style>
-body { margin:0; overflow:hidden; background:black; color:white; font-family:sans-serif; }
+body { margin:0; overflow:hidden; background:black; font-family:sans-serif; }
 
+/* UI */
 #ui {
   position:fixed;
   top:20px;
   left:20px;
   z-index:10;
 }
-
 .card {
   background:rgba(255,255,255,0.08);
   backdrop-filter:blur(10px);
   padding:15px;
   border-radius:10px;
-  width:280px;
-}
-
-#apod img {
-  width:100%;
-  border-radius:10px;
-  margin-top:10px;
+  width:260px;
+  color:white;
 }
 </style>
 </head>
@@ -35,9 +30,8 @@ body { margin:0; overflow:hidden; background:black; color:white; font-family:san
 
 <div id="ui">
   <div class="card">
-    <h2>🌌 Space Explorer</h2>
-    <p>Drag / touch to explore</p>
-    <div id="apod">Loading NASA data...</div>
+    <h2 id="name">🌌 Space</h2>
+    <p id="desc">Scroll to begin journey</p>
   </div>
 </div>
 
@@ -48,8 +42,8 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160/build/three.mod
 const scene = new THREE.Scene();
 
 // CAMERA
-const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 2000);
-camera.position.z = 50;
+const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 3000);
+camera.position.set(0,0,10);
 
 // RENDERER
 const renderer = new THREE.WebGLRenderer({antialias:true});
@@ -57,90 +51,95 @@ renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // LIGHT
-const light = new THREE.PointLight(0xffffff, 2);
+const light = new THREE.PointLight(0xffffff,2);
+light.position.set(50,50,50);
 scene.add(light);
 
-// SUN
-const sun = new THREE.Mesh(
-  new THREE.SphereGeometry(5,64,64),
-  new THREE.MeshBasicMaterial({color:0xffcc00})
-);
-scene.add(sun);
+// STARFIELD
+const starGeo = new THREE.BufferGeometry();
+let starPos=[];
+for(let i=0;i<6000;i++){
+  starPos.push((Math.random()-0.5)*4000);
+  starPos.push((Math.random()-0.5)*4000);
+  starPos.push((Math.random()-0.5)*4000);
+}
+starGeo.setAttribute("position", new THREE.Float32BufferAttribute(starPos,3));
+const stars = new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xffffff}));
+scene.add(stars);
 
-// PLANETS DATA
+// TEXTURES
 const loader = new THREE.TextureLoader();
 
+// CREATE PLANET
+function createPlanet(tex, x, name, desc){
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(3,64,64),
+    new THREE.MeshStandardMaterial({map:loader.load(tex)})
+  );
+  mesh.position.x = x;
+  scene.add(mesh);
+
+  return {mesh,name,desc};
+}
+
+// PLANETS (PATH)
 const planets = [
-  {dist:10, size:1, speed:0.02, color:0xaaaaaa},
-  {dist:15, size:1.2, speed:0.015, color:0xffcc99},
-  {dist:20, size:1.3, speed:0.01, tex:"https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg"},
-  {dist:25, size:1, speed:0.008, color:0xff3300},
+  createPlanet("https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg", 0, "🌍 Earth","Our home"),
+  createPlanet("https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mars_1k_color.jpg", 80, "🔴 Mars","Red planet"),
+  createPlanet("https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/jupiter.jpg", 160, "🪐 Jupiter","Gas giant"),
+  createPlanet("https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/jupiter.jpg", 250, "🪐 Saturn","Ringed giant")
 ];
 
-planets.forEach(p=>{
-  let mat = p.tex
-    ? new THREE.MeshStandardMaterial({map:loader.load(p.tex)})
-    : new THREE.MeshStandardMaterial({color:p.color});
+// SCROLL → CAMERA
+let target = 0;
+let current = 0;
 
-  p.mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(p.size,32,32),
-    mat
-  );
-  scene.add(p.mesh);
+window.addEventListener("wheel", e=>{
+  target += e.deltaY * 0.2;
 });
 
-// ORBIT
+// TOUCH
+window.addEventListener("touchmove", e=>{
+  target += e.touches[0].clientY * 0.02;
+});
+
+// MOUSE PARALLAX
+document.addEventListener("mousemove", e=>{
+  camera.rotation.y = (e.clientX / innerWidth - 0.5) * 0.2;
+  camera.rotation.x = (e.clientY / innerHeight - 0.5) * 0.2;
+});
+
+// ANIMATION
 function animate(){
   requestAnimationFrame(animate);
 
-  planets.forEach((p,i)=>{
-    let angle = Date.now() * p.speed * 0.001;
-    p.mesh.position.x = Math.cos(angle) * p.dist;
-    p.mesh.position.z = Math.sin(angle) * p.dist;
+  // SMOOTH CAMERA
+  current += (target - current) * 0.05;
+  camera.position.x = current;
+
+  // ROTATE PLANETS
+  planets.forEach(p=>{
+    p.mesh.rotation.y += 0.003;
   });
+
+  // FIND CLOSEST PLANET
+  let closest = planets.reduce((a,b)=>{
+    return Math.abs(b.mesh.position.x-camera.position.x) <
+           Math.abs(a.mesh.position.x-camera.position.x)?b:a;
+  });
+
+  document.getElementById("name").innerText = closest.name;
+  document.getElementById("desc").innerText = closest.desc;
 
   renderer.render(scene,camera);
 }
 animate();
 
-// TOUCH CONTROLS
-let isDragging=false, prevX=0;
-
-window.addEventListener("mousedown", e=>{
-  isDragging=true; prevX=e.clientX;
-});
-window.addEventListener("mouseup", ()=> isDragging=false);
-window.addEventListener("mousemove", e=>{
-  if(isDragging){
-    let dx=e.clientX-prevX;
-    camera.position.x += dx * 0.1;
-    prevX=e.clientX;
-  }
-});
-
-// MOBILE TOUCH
-window.addEventListener("touchstart", e=>{
-  prevX=e.touches[0].clientX;
-});
-window.addEventListener("touchmove", e=>{
-  let dx=e.touches[0].clientX-prevX;
-  camera.position.x += dx * 0.1;
-  prevX=e.touches[0].clientX;
-});
-
-// NASA API
-fetch("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY")
-.then(res=>res.json())
-.then(data=>{
-  document.getElementById("apod").innerHTML =
-    `<p>${data.title}</p><img src="${data.url}">`;
-});
-
 // RESIZE
 window.addEventListener("resize", ()=>{
-  camera.aspect=innerWidth/innerHeight;
+  camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth,innerHeight);
+  renderer.setSize(innerWidth, innerHeight);
 });
 </script>
 
