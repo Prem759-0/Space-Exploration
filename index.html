@@ -3,175 +3,204 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Ultra</title>
+<title>Space Experience</title>
 
 <style>
-body { margin:0; overflow:hidden; background:black; font-family:sans-serif; }
+body { margin:0; overflow:hidden; background:black; font-family:sans-serif; color:white; }
 
+/* LOADER */
+#loader {
+  position:fixed;
+  width:100%;
+  height:100%;
+  background:black;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:100;
+  flex-direction:column;
+}
+
+#loader h1 {
+  font-size:2rem;
+  letter-spacing:3px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%{opacity:0.3;}
+  100%{opacity:1;}
+}
+
+/* UI */
 #ui {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 10;
+  position:fixed;
+  top:20px;
+  left:20px;
+  z-index:10;
 }
 
 .card {
-  backdrop-filter: blur(12px);
-  background: rgba(255,255,255,0.05);
-  padding: 20px;
-  border-radius: 15px;
-  max-width: 300px;
-  color: white;
+  backdrop-filter: blur(15px);
+  background: rgba(255,255,255,0.07);
+  padding:20px;
+  border-radius:15px;
+  width:280px;
+  box-shadow:0 0 30px rgba(255,255,255,0.1);
+  transition:0.3s;
+}
+
+.card:hover {
+  transform: scale(1.03);
+}
+
+/* CONTROLS */
+.controls {
+  margin-top:15px;
+}
+
+button {
+  background:rgba(255,255,255,0.1);
+  border:none;
+  padding:8px 12px;
+  margin:5px;
+  border-radius:8px;
+  color:white;
+  cursor:pointer;
+}
+button:hover {
+  background:rgba(255,255,255,0.3);
 }
 </style>
 </head>
 
 <body>
 
+<div id="loader">
+  <h1>🚀 Initializing Space...</h1>
+</div>
+
 <div id="ui">
   <div class="card">
-    <h2 id="name">🌍 Earth</h2>
-    <p id="desc">Scroll to travel</p>
+    <h2 id="name">Loading...</h2>
+    <p id="desc">Preparing journey...</p>
+
+    <div class="controls">
+      <button onclick="toggleSound()">🔊 Sound</button>
+      <button onclick="toggleWarp()">⚡ Warp</button>
+    </div>
   </div>
 </div>
 
-<script type="module">
+<audio id="bgSound" loop>
+  <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_c8c8a73467.mp3" type="audio/mp3">
+</audio>
 
+<script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js";
 
-// SCENE
 const scene = new THREE.Scene();
 
-// CAMERA
 const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 2000);
 camera.position.z = 5;
 
-// RENDERER
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// LIGHT
+// LIGHTING
 const light = new THREE.PointLight(0xffffff, 2);
 light.position.set(50,50,50);
 scene.add(light);
 
 // STARFIELD
-const starsGeo = new THREE.BufferGeometry();
-const starCount = 5000;
+const starGeo = new THREE.BufferGeometry();
 let starPos = [];
-
-for(let i=0;i<starCount;i++){
+for(let i=0;i<6000;i++){
   starPos.push((Math.random()-0.5)*2000);
   starPos.push((Math.random()-0.5)*2000);
   starPos.push((Math.random()-0.5)*2000);
 }
-starsGeo.setAttribute("position", new THREE.Float32BufferAttribute(starPos,3));
-
-const stars = new THREE.Points(starsGeo, new THREE.PointsMaterial({color:0xffffff}));
+starGeo.setAttribute("position", new THREE.Float32BufferAttribute(starPos,3));
+const stars = new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xffffff}));
 scene.add(stars);
 
 // TEXTURES
 const loader = new THREE.TextureLoader();
 
-function createPlanet(texture, x) {
-  const geo = new THREE.SphereGeometry(2, 64, 64);
-  const mat = new THREE.MeshStandardMaterial({map:texture});
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.x = x;
+function planet(tex,x){
+  const geo = new THREE.SphereGeometry(2,64,64);
+  const mat = new THREE.MeshStandardMaterial({map:tex});
+  const mesh = new THREE.Mesh(geo,mat);
+  mesh.position.x=x;
   scene.add(mesh);
-
-  // GLOW
-  const glowGeo = new THREE.SphereGeometry(2.2, 64, 64);
-  const glowMat = new THREE.MeshBasicMaterial({
-    color:0x00aaff,
-    transparent:true,
-    opacity:0.2
-  });
-  const glow = new THREE.Mesh(glowGeo, glowMat);
-  glow.position.x = x;
-  scene.add(glow);
-
   return mesh;
 }
 
-// SATURN RINGS
-function createSaturn(texture, x) {
-  const saturn = createPlanet(texture, x);
-
-  const ringGeo = new THREE.RingGeometry(2.5, 4, 64);
-  const ringMat = new THREE.MeshBasicMaterial({
-    color:0xffffff,
-    side: THREE.DoubleSide,
-    transparent:true,
-    opacity:0.5
-  });
-
-  const ring = new THREE.Mesh(ringGeo, ringMat);
-  ring.rotation.x = Math.PI/2;
-  ring.position.x = x;
-
-  scene.add(ring);
-
-  return saturn;
-}
-
-// PLANETS
-const earth = createPlanet(loader.load("https://threejs.org/examples/textures/earth_atmos_2048.jpg"), 0);
-const mars = createPlanet(loader.load("https://threejs.org/examples/textures/mars_1k_color.jpg"), 30);
-const jupiter = createPlanet(loader.load("https://threejs.org/examples/textures/jupiter.jpg"), 60);
-const saturn = createSaturn(loader.load("https://threejs.org/examples/textures/jupiter.jpg"), 100);
+const earth = planet(loader.load("https://threejs.org/examples/textures/earth_atmos_2048.jpg"),0);
+const mars = planet(loader.load("https://threejs.org/examples/textures/mars_1k_color.jpg"),30);
+const jupiter = planet(loader.load("https://threejs.org/examples/textures/jupiter.jpg"),60);
 
 const planets = [
-  {mesh:earth, name:"🌍 Earth", desc:"Our home planet"},
-  {mesh:mars, name:"🔴 Mars", desc:"The red planet"},
-  {mesh:jupiter, name:"🪐 Jupiter", desc:"Gas giant"},
-  {mesh:saturn, name:"🪐 Saturn", desc:"With rings"}
+  {mesh:earth,name:"🌍 Earth",desc:"Our home"},
+  {mesh:mars,name:"🔴 Mars",desc:"Future colony"},
+  {mesh:jupiter,name:"🪐 Jupiter",desc:"Gas giant"}
 ];
 
-// SCROLL CAMERA
-let scrollY = 0;
+// SCROLL SMOOTH
+let target = 0;
+let current = 0;
 
 window.addEventListener("wheel", e=>{
-  scrollY += e.deltaY * 0.05;
+  target += e.deltaY * 0.05;
 });
 
-// MOUSE PARALLAX
-document.addEventListener("mousemove", e=>{
-  camera.rotation.y = (e.clientX / innerWidth - 0.5) * 0.2;
-  camera.rotation.x = (e.clientY / innerHeight - 0.5) * 0.2;
-});
+// SOUND
+let soundOn=false;
+window.toggleSound = ()=>{
+  const audio=document.getElementById("bgSound");
+  soundOn=!soundOn;
+  soundOn ? audio.play() : audio.pause();
+};
 
-// ANIMATION
+// WARP MODE
+let warp=false;
+window.toggleWarp = ()=> warp=!warp;
+
+// ANIMATE
 function animate(){
   requestAnimationFrame(animate);
 
-  camera.position.x = scrollY;
+  current += (target-current)*0.05;
+  camera.position.x = current;
 
-  planets.forEach(p=>{
-    p.mesh.rotation.y += 0.002;
-  });
+  planets.forEach(p=> p.mesh.rotation.y+=0.002);
 
-  // UPDATE UI
+  stars.rotation.y += warp ? 0.01 : 0.001;
+
   let closest = planets.reduce((a,b)=>{
-    return Math.abs(b.mesh.position.x - camera.position.x) <
-           Math.abs(a.mesh.position.x - camera.position.x) ? b : a;
+    return Math.abs(b.mesh.position.x-camera.position.x) <
+           Math.abs(a.mesh.position.x-camera.position.x)?b:a;
   });
 
-  document.getElementById("name").innerText = closest.name;
-  document.getElementById("desc").innerText = closest.desc;
+  document.getElementById("name").innerText=closest.name;
+  document.getElementById("desc").innerText=closest.desc;
 
   renderer.render(scene,camera);
 }
 animate();
 
+// LOADER
+setTimeout(()=>{
+  document.getElementById("loader").style.display="none";
+},2000);
+
 // RESIZE
 window.addEventListener("resize", ()=>{
-  camera.aspect = innerWidth/innerHeight;
+  camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
+  renderer.setSize(innerWidth,innerHeight);
 });
-
 </script>
 
 </body>
