@@ -6,10 +6,10 @@ export function warpEffect(canvas) {
 
   let stars = [];
 
-  for (let i = 0; i < 500; i++) {
+  for (let i = 0; i < 800; i++) {
     stars.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
+      x: Math.random() * canvas.width - canvas.width/2,
+      y: Math.random() * canvas.height - canvas.height/2,
       z: Math.random() * canvas.width
     });
   }
@@ -19,18 +19,16 @@ export function warpEffect(canvas) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     stars.forEach(star => {
-      star.z -= 2;
+      star.z -= 4;
 
-      if (star.z <= 0) {
-        star.z = canvas.width;
-      }
+      if (star.z <= 0) star.z = canvas.width;
 
-      let k = 128.0 / star.z;
-      let px = star.x * k + canvas.width / 2;
-      let py = star.y * k + canvas.height / 2;
+      let k = 128 / star.z;
+      let x = star.x * k + canvas.width/2;
+      let y = star.y * k + canvas.height/2;
 
       ctx.fillStyle = "white";
-      ctx.fillRect(px, py, 2, 2);
+      ctx.fillRect(x, y, 2, 2);
     });
 
     requestAnimationFrame(animate);
